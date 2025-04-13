@@ -1,8 +1,7 @@
-using JetBrains.Annotations;
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class CheckpointsManager : MonoBehaviour
@@ -11,32 +10,33 @@ public class CheckpointsManager : MonoBehaviour
     public event EventHandler<CheckpointEventArgs> OnEnteringCorrectCheckPoint;
     public event EventHandler<CheckpointEventArgs> OnEnteringWrongCheckPoint;
 
-    public List<Transform> carsList = new List<Transform>();
-
-    private Dictionary<Transform, int> carCheckpointStageMap = new Dictionary<Transform, int>();
+    public List<Transform> participantsList = new List<Transform>();
+    //Dictionary thats hold index of next checkpoint to colect by participant
+    private Dictionary<Transform, int> participantNextCheckpointIndex= new Dictionary<Transform, int>();
     private List<Checkpoint> checkpointsList = new List<Checkpoint>();
     public class CheckpointEventArgs
     {
-        public Transform checkpointPassedTransform { get; set; }
+        public Transform checkpointParticipantTransform { get; set; }
     }
 
 
     private void Awake()
     {
-        if (!populateCarCheckpointStageMap(carsList)) { Debug.Log("populateCarCheckpointStageMap faild!"); return; }
-        if (!populateCheckpointsList()) { Debug.Log("populateCheckpointsList faild!"); return; }
+        if (!PopulateparticipantNextCheckpointIndex(participantsList)) { Debug.Log("PopulateparticipantNextCheckpointIndexfaild!"); return; }
+        if (!PopulateCheckpointsList()) { Debug.Log("PopulateCheckpointsList faild!"); return; }
     }
+    
     #region hellpers
-    private bool populateCarCheckpointStageMap(List<Transform> carTransforms)
+    private bool PopulateparticipantNextCheckpointIndex(List<Transform> participantTransforms)
     {
-        foreach (var transform in carTransforms)
+        foreach (var transform in participantTransforms)
         {
-            carCheckpointStageMap[transform] = 0;
+            participantNextCheckpointIndex[transform] = 0;
         }
-        return carCheckpointStageMap.Count == 0 ?  false : true;
+        return participantNextCheckpointIndex.Count == 0 ?  false : true;
     }
 
-    private bool populateCheckpointsList()
+    private bool PopulateCheckpointsList()
     {
         Transform checkpointsTransforms = this.transform;
         foreach (Transform checkpointTransform in checkpointsTransforms)
@@ -48,18 +48,41 @@ public class CheckpointsManager : MonoBehaviour
         return checkpointsList.Count == 0 ? false: true;
     }
     #endregion
-    public void CheckpointEntered(Checkpoint checkpoint, Transform carTransform)
+    //Called by invidual Checkpoint to inform that somebody entered it
+    public void CheckpointEntered(Checkpoint checkpoint, Transform participantTransform)
     {
-        if (checkpointsList.IndexOf(checkpoint) == carCheckpointStageMap[carTransform])
+        if (checkpointsList.IndexOf(checkpoint) == participantNextCheckpointIndex[participantTransform])
         {
-            Debug.Log("Correct: " + checkpointsList.IndexOf(checkpoint) + ", expected: " + carCheckpointStageMap[carTransform]);
-            carCheckpointStageMap[carTransform] = (carCheckpointStageMap[carTransform] < checkpointsList.Count-1) ? carCheckpointStageMap[carTransform] + 1 : 0;
-            OnEnteringCorrectCheckPoint?.Invoke(this, new CheckpointEventArgs { checkpointPassedTransform = carTransform });
+            Debug.Log("Correct: " + checkpointsList.IndexOf(checkpoint) + ", expected: " + participantNextCheckpointIndex[participantTransform]);
+            if(participantNextCheckpointIndex[participantTransform] < checkpointsList.Count - 1)
+            {
+                ResetParticipantProgres(participantTransform);
+            }
+            else
+            {
+                participantNextCheckpointIndex[participantTransform]++;
+            }
+            OnEnteringCorrectCheckPoint?.Invoke(this, new CheckpointEventArgs { checkpointParticipantTransform = participantTransform });
         }
         else
         {
-            Debug.Log("Wrong: " + checkpointsList.IndexOf(checkpoint) + ", expected: " + carCheckpointStageMap[carTransform]);
-            OnEnteringWrongCheckPoint?.Invoke(this, new CheckpointEventArgs { checkpointPassedTransform = carTransform});
+            Debug.Log("Wrong: " + checkpointsList.IndexOf(checkpoint) + ", expected: " + participantNextCheckpointIndex[participantTransform]);
+            OnEnteringWrongCheckPoint?.Invoke(this, new CheckpointEventArgs { checkpointParticipantTransform = participantTransform});
         }
+    }
+    //Extra methods for members outside Checkpoint system alows for controling and geting state. 
+    public Checkpoint GetNextCheckPoint(Transform participantTransform)
+    {
+        int participantPosition = GetParticipantPosition(participantTransform);
+        if (participantPosition < checkpointsList.Count - 1) { return checkpointsList[participantPosition]; }
+        return checkpointsList[0];
+    }
+    public void ResetParticipantProgres(Transform participantTransform)
+    {
+        participantNextCheckpointIndex[participantTransform] = 0;
+    }
+    public int GetParticipantPosition(Transform participantTransform)
+    {
+        return participantNextCheckpointIndex[participantTransform];
     }
 }

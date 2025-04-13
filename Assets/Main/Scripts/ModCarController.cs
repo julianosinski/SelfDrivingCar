@@ -111,14 +111,7 @@ public class ModCarController : MonoBehaviour
 
     void ApplySteering()
     {
-        //float current = Mathf.Lerp(0, maxTurnSpeed, turnInput );
-        //print("current: " + current + " turnInput: " + turnInput);
-        //float newRotation = turnInput * maxTurnSpeed * Time.deltaTime * (1-(currentSpeed / (accelerationInput > 0 ? maxFwdSpeed : maxRevSpeed)*0.5f));
-        //float rotationDifficulty = turnCurve.Evaluate(Time.fixedDeltaTime*3) * (1 - (currentSpeed / (accelerationInput > 0 ? maxFwdSpeed : maxRevSpeed) * 0.5f));
-        
-
         float newRotation = turnInput * maxTurnSpeed * Time.deltaTime * (Mathf.Abs(currentSpeed) < 5 ? 0 : 1);
-        //print(newRotation);
         
         transform.Rotate(0, newRotation, 0);
     }
@@ -129,12 +122,9 @@ public class ModCarController : MonoBehaviour
 
         bool isGrounded = Physics.Raycast(transform.position, -transform.up, out hit, 1f, groundLayer);
 
-        // badz prostopadle do ziemi
-
-        // now wersja jest bardziej plynna 
         Quaternion toRotateTo = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
         transform.rotation = Quaternion.Slerp(transform.rotation, toRotateTo, Time.deltaTime * (isAlignToGroundEffectedBySpeed ? Mathf.Abs(currentSpeed) : alignToGroundTime));
-        // stara wersja 
+        //Simpler version newer one is more fluent 
         //transform.rotation = Quaternion.FromToRotation(transform.up, hit.normal) * transform.rotation;
 
         return isGrounded;
@@ -161,6 +151,22 @@ public class ModCarController : MonoBehaviour
     {
         accelerationInput = inputVector.y;
         turnInput = inputVector.x;
-        
+    }
+
+    public void StopMovement()
+    {
+        sphereRB.linearVelocity = Vector3.zero;
+        sphereRB.angularVelocity = Vector3.zero;
+
+        if (carRb != null)
+        {
+            carRb.linearVelocity = Vector3.zero;
+            carRb.angularVelocity = Vector3.zero;
+        }
+
+        accelerationInput = 0;
+        turnInput = 0;
+
+        sphereRB.linearDamping = groundDrag;
     }
 }
