@@ -10,6 +10,8 @@ public class CheckpointsManager : MonoBehaviour
     public event EventHandler<CheckpointEventArgs> OnEnteringCorrectCheckPoint;
     public event EventHandler<CheckpointEventArgs> OnEnteringWrongCheckPoint;
 
+    public bool enableDebugLogs = false;
+
     public List<Transform> participantsList = new List<Transform>();
     //Dictionary thats hold index of next checkpoint to colect by participant
     private Dictionary<Transform, int> participantNextCheckpointIndex= new Dictionary<Transform, int>();
@@ -22,8 +24,8 @@ public class CheckpointsManager : MonoBehaviour
 
     private void Awake()
     {
-        if (!PopulateparticipantNextCheckpointIndex(participantsList)) { Debug.Log("PopulateparticipantNextCheckpointIndexfaild!"); return; }
-        if (!PopulateCheckpointsList()) { Debug.Log("PopulateCheckpointsList faild!"); return; }
+        if (!PopulateparticipantNextCheckpointIndex(participantsList)) { Log("PopulateparticipantNextCheckpointIndexfaild!"); return; }
+        if (!PopulateCheckpointsList()) { Log("PopulateCheckpointsList faild!"); return; }
     }
     
     #region hellpers
@@ -47,13 +49,21 @@ public class CheckpointsManager : MonoBehaviour
         }
         return checkpointsList.Count == 0 ? false: true;
     }
+
+    private void Log(string message)
+    {
+        if (enableDebugLogs)
+        {
+            UnityEngine.Debug.Log($"[{name}] {message}");
+        }
+    }
     #endregion
     //Called by invidual Checkpoint to inform that somebody entered it
     public void CheckpointEntered(Checkpoint checkpoint, Transform participantTransform)
     {
         if (checkpointsList.IndexOf(checkpoint) == participantNextCheckpointIndex[participantTransform])
         {
-            Debug.Log("Correct: " + checkpointsList.IndexOf(checkpoint) + ", expected: " + participantNextCheckpointIndex[participantTransform]);
+            Log("Correct: " + checkpointsList.IndexOf(checkpoint) + ", expected: " + participantNextCheckpointIndex[participantTransform]);
             if(participantNextCheckpointIndex[participantTransform] < checkpointsList.Count - 1)
             {
                 ResetParticipantProgres(participantTransform);
@@ -66,7 +76,7 @@ public class CheckpointsManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("Wrong: " + checkpointsList.IndexOf(checkpoint) + ", expected: " + participantNextCheckpointIndex[participantTransform]);
+            Log("Wrong: " + checkpointsList.IndexOf(checkpoint) + ", expected: " + participantNextCheckpointIndex[participantTransform]);
             OnEnteringWrongCheckPoint?.Invoke(this, new CheckpointEventArgs { checkpointParticipantTransform = participantTransform});
         }
     }

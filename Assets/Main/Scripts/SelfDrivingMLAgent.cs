@@ -3,6 +3,7 @@ using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
 using Unity.VisualScripting;
+using System;
 
 public class SelfDrivingMLAgent : Agent
 {
@@ -33,7 +34,7 @@ public class SelfDrivingMLAgent : Agent
     {
         if(carRb.transform == e.transform)
         {
-            AddReward(-0.5f);
+            AddReward(-0.1f);
         }
     }
 
@@ -41,20 +42,21 @@ public class SelfDrivingMLAgent : Agent
     {
         if (carRb.transform == e.transform)
         {
-            AddReward(-0.1f);
+            AddReward(-0.5f);
         }
     }
 
     private void CheckpointsManager_OnEnteringCorrectCheckPoint(object sender, CheckpointsManager.CheckpointEventArgs e)
     {
-        if(e.checkpointParticipantTransform == transform)
+        if(e.checkpointParticipantTransform == carRb.transform)
         {
+            //Debug.Log("Reward colected by: " + transform.name);
             AddReward(1f);
         } 
     }
     private void CheckpointsManager_OnEnteringWrongCheckPoint(object sender, CheckpointsManager.CheckpointEventArgs e)
     {
-        if (e.checkpointParticipantTransform == transform)
+        if (e.checkpointParticipantTransform == carRb.transform)
         {
             AddReward(-1f);
         }
@@ -65,10 +67,12 @@ public class SelfDrivingMLAgent : Agent
     #endregion
     public override void OnEpisodeBegin()
     {
-        transform.position = spawnPos.position + new Vector3(Random.Range(-5, 5f), 0f, Random.Range(-5, 5f));
+        Vector3 randomSpawnPos = spawnPos.position + new Vector3(UnityEngine.Random.Range(-5, 5f), 0f, UnityEngine.Random.Range(-5, 5f));
+        transform.position = randomSpawnPos;
         transform.forward = spawnPos.forward;
         checkpointsManager.ResetParticipantProgres(transform);
         carController.StopMovement();
+        Debug.Log("New Episode Begins! " + randomSpawnPos);
     }
     /*
      * sensor (our case RayPerceptionSensorComponent3D) handles most of observations 
@@ -102,6 +106,9 @@ public class SelfDrivingMLAgent : Agent
 
         carController.SetInputVector(new Vector2(turnAmount, accelerationAmount));
     }
+    public override void Heuristic(in ActionBuffers actionsOut)
+    {
+        
+    }
 
-    
 }
